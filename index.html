@@ -1,4 +1,46 @@
-<!DOCTYPE html>
+<div class="form-group">
+                <label for="hardness">Calcium Hardness (ppm)</label>
+                <select id="hardness">
+                    <option value="">Select calcium hardness level</option>
+                    <option value="unknown">Unknown - Don't have this test</option>
+                    <option value="custom">I know my exact ppm</option>
+                    <option value="150">Low (under 200 ppm)</option>
+                    <option value="250">Normal (200-300 ppm)</option>
+                    <option value="350">High (300-400 ppm)</option>
+                    <option value="450">Very High (over 400 ppm)</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="customHardness" style="display: none;">
+                <label for="exactHardness">Exact Calcium Hardness (ppm)</label>
+                <input type="number" id="exactHardness" placeholder="Enter exact ppm" min="0" max="800">
+            </div>
+            
+            <div class="section-title">Additional Tests (Optional)</div>
+            
+            <div class="two-column">
+                <div class="form-group">
+                    <label for="cyanuricAcid">Cyanuric Acid (ppm) - Optional</label>
+                    <input type="number" id="cyanuricAcid" step="1" placeholder="e.g., 37" min="0" max="200">
+                </div>
+                
+                <div class="form-group">
+                    <label for="phosphates">Phosphates (ppb) - Optional</label>
+                    <input type="number" id="phosphates" step="10" placeholder="e.g., 220" min="0" max="1000">
+                </div>
+            </div>
+            
+            <div class="two-column">
+                <div class="form-group">
+                    <label for="iron">Iron (ppm) - Optional</label>
+                    <input type="number" id="iron" step="0.1" placeholder="e.g., 0.0" min="0" max="5">
+                </div>
+                
+                <div class="form-group">
+                    <label for="copper">Copper (ppm) - Optional</label>
+                    <input type="number" id="copper" step="0.1" placeholder="e.g., 0.0" min="0" max="5">
+                </div>
+            </div><!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -211,25 +253,25 @@
             
             <div class="two-column">
                 <div class="form-group">
-                    <label for="ph">pH Level</label>
-                    <input type="number" id="ph" step="0.1" placeholder="e.g., 7.2" min="6" max="9">
+                    <label for="chlorine">Free Chlorine (ppm)</label>
+                    <input type="number" id="chlorine" step="0.1" placeholder="e.g., 1.5" min="0" max="10">
                 </div>
                 
                 <div class="form-group">
-                    <label for="chlorine">Free Chlorine (ppm)</label>
-                    <input type="number" id="chlorine" step="0.1" placeholder="e.g., 1.5" min="0" max="10">
+                    <label for="totalChlorine">Total Chlorine (ppm) - Optional</label>
+                    <input type="number" id="totalChlorine" step="0.1" placeholder="e.g., 1.8" min="0" max="10">
                 </div>
             </div>
             
             <div class="two-column">
                 <div class="form-group">
-                    <label for="alkalinity">Total Alkalinity (ppm)</label>
-                    <input type="number" id="alkalinity" placeholder="e.g., 120" min="0" max="300">
+                    <label for="ph">pH Level</label>
+                    <input type="number" id="ph" step="0.1" placeholder="e.g., 7.2" min="6" max="9">
                 </div>
                 
                 <div class="form-group">
-                    <label for="hardness">Calcium Hardness (ppm)</label>
-                    <input type="number" id="hardness" placeholder="e.g., 200" min="0" max="800">
+                    <label for="alkalinity">Total Alkalinity (ppm)</label>
+                    <input type="number" id="alkalinity" placeholder="e.g., 120" min="0" max="300">
                 </div>
             </div>
             
@@ -263,14 +305,29 @@
             }
         });
 
+        document.getElementById('hardness').addEventListener('change', function() {
+            const customDiv = document.getElementById('customHardness');
+            if (this.value === 'custom') {
+                customDiv.style.display = 'block';
+            } else {
+                customDiv.style.display = 'none';
+            }
+        });
+
         function calculateResults() {
             // Get values
             const poolSizeSelect = document.getElementById('poolSize').value;
             const exactGallons = document.getElementById('exactGallons').value;
             const ph = parseFloat(document.getElementById('ph').value);
             const chlorine = parseFloat(document.getElementById('chlorine').value);
+            const totalChlorine = parseFloat(document.getElementById('totalChlorine').value);
             const alkalinity = parseFloat(document.getElementById('alkalinity').value);
-            const hardness = parseFloat(document.getElementById('hardness').value);
+            const hardnessSelect = document.getElementById('hardness').value;
+            const exactHardness = document.getElementById('exactHardness').value;
+            const cyanuricAcid = parseFloat(document.getElementById('cyanuricAcid').value);
+            const phosphates = parseFloat(document.getElementById('phosphates').value);
+            const iron = parseFloat(document.getElementById('iron').value);
+            const copper = parseFloat(document.getElementById('copper').value);
             const condition = document.getElementById('condition').value;
             
             // Determine actual gallons
@@ -284,6 +341,14 @@
                 return;
             }
             
+            // Determine calcium hardness
+            let hardness = null;
+            if (hardnessSelect === 'custom' && exactHardness) {
+                hardness = parseInt(exactHardness);
+            } else if (hardnessSelect && hardnessSelect !== 'unknown') {
+                hardness = parseInt(hardnessSelect);
+            }
+            
             // Validate inputs
             if (!ph || !chlorine || !alkalinity) {
                 alert('Please fill in at least pH, Chlorine, and Alkalinity values');
@@ -291,7 +356,7 @@
             }
             
             // Calculate recommendations
-            const recommendations = generateRecommendations(gallons, ph, chlorine, alkalinity, hardness, condition);
+            const recommendations = generateRecommendations(gallons, ph, chlorine, totalChlorine, alkalinity, hardness, cyanuricAcid, phosphates, iron, copper, condition);
             
             // Display results
             document.getElementById('recommendations').innerHTML = recommendations;
@@ -301,7 +366,7 @@
             document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
         }
 
-        function generateRecommendations(gallons, ph, chlorine, alkalinity, hardness, condition) {
+        function generateRecommendations(gallons, ph, chlorine, totalChlorine, alkalinity, hardness, cyanuricAcid, phosphates, iron, copper, condition) {
             let html = '';
             let steps = [];
             
@@ -313,6 +378,70 @@
                     content: `Your pH is too low (${ph}). Add ${sodaAshLbs} lbs of Soda Ash (Sodium Carbonate).`,
                     instructions: 'Dissolve in a bucket of water and pour around the pool perimeter with pump running. Wait 2 hours before retesting.',
                     product: 'https://amazon.com/dp/B000BXLGMO'
+                });
+            }
+            
+            // Cyanuric Acid Recommendations
+            if (cyanuricAcid && !isNaN(cyanuricAcid)) {
+                if (cyanuricAcid < 30) {
+                    const stabilizer = Math.ceil((gallons / 10000) * 2);
+                    steps.push({
+                        title: 'Low Cyanuric Acid (Stabilizer)',
+                        content: `Your cyanuric acid is low (${cyanuricAcid} ppm). Add ${stabilizer} lbs of Cyanuric Acid.`,
+                        instructions: 'Dissolve in warm water and add to skimmer with pump running. This protects chlorine from UV breakdown. Test after 24 hours.',
+                        product: 'https://amazon.com/dp/B000BXQPZK'
+                    });
+                } else if (cyanuricAcid > 100) {
+                    steps.push({
+                        title: '⚠️ High Cyanuric Acid - Partial Drain Needed',
+                        content: `Your cyanuric acid is too high (${cyanuricAcid} ppm). This reduces chlorine effectiveness.`,
+                        instructions: 'Drain 1/3 to 1/2 of pool water and refill. High CYA makes chlorine less effective, requiring higher chlorine levels.',
+                        product: ''
+                    });
+                } else {
+                    steps.push({
+                        title: 'Cyanuric Acid - Good! ✅',
+                        content: `Your cyanuric acid (${cyanuricAcid} ppm) is in good range.`,
+                        instructions: '',
+                        product: ''
+                    });
+                }
+            }
+            
+            // Phosphates Check
+            if (phosphates && !isNaN(phosphates)) {
+                if (phosphates > 100) {
+                    const phosphateRemover = Math.ceil((gallons / 10000) * 2);
+                    steps.push({
+                        title: '🌱 High Phosphates - Algae Food',
+                        content: `Your phosphates are elevated (${phosphates} ppb). This feeds algae growth.`,
+                        instructions: `Add ${phosphateRemover} bottles of phosphate remover. Run pump 24 hours, then clean filter. Lower phosphates make algae prevention easier.`,
+                        product: 'https://amazon.com/dp/B000BXP7Y8'
+                    });
+                } else {
+                    steps.push({
+                        title: 'Phosphates - Good! ✅',
+                        content: `Your phosphates (${phosphates} ppb) are at acceptable levels.`,
+                        instructions: '',
+                        product: ''
+                    });
+                }
+            }
+            
+            // Metal Checks (Iron/Copper)
+            if ((iron && !isNaN(iron) && iron > 0.2) || (copper && !isNaN(copper) && copper > 0.2)) {
+                steps.push({
+                    title: '⚠️ Metals Detected - Staining Risk',
+                    content: `Metals detected: Iron: ${iron || 'N/A'} ppm, Copper: ${copper || 'N/A'} ppm.`,
+                    instructions: 'Add metal sequestrant weekly to prevent staining. Consider installing a metal remover cartridge in your skimmer. Test source water for metals.',
+                    product: 'https://amazon.com/dp/B000NCRKG6'
+                });
+            } else if ((iron && !isNaN(iron)) || (copper && !isNaN(copper))) {
+                steps.push({
+                    title: 'Metals - Good! ✅',
+                    content: 'Metal levels are within acceptable range.',
+                    instructions: '',
+                    product: ''
                 });
             } else if (ph > 7.6) {
                 const muriateOz = Math.ceil((gallons / 10000) * 16);
@@ -356,6 +485,27 @@
                 });
             }
             
+            // Combined Chlorine Check (if Total Chlorine provided)
+            if (totalChlorine && !isNaN(totalChlorine)) {
+                const combinedChlorine = totalChlorine - chlorine;
+                if (combinedChlorine > 0.5) {
+                    const shockLbs = Math.ceil((gallons / 10000) * 1);
+                    steps.push({
+                        title: '⚠️ Combined Chlorine Detected - SHOCK NEEDED',
+                        content: `You have ${combinedChlorine.toFixed(1)} ppm combined chlorine (chloramines). This causes smell and irritation.`,
+                        instructions: `Shock your pool with ${shockLbs} lbs of Cal-Hypo shock. Run pump 24 hours. This will break down chloramines and restore water quality.`,
+                        product: 'https://amazon.com/dp/B000BXQRZ2'
+                    });
+                } else if (combinedChlorine >= 0) {
+                    steps.push({
+                        title: 'Combined Chlorine - Good! ✅',
+                        content: `Combined chlorine is low (${combinedChlorine.toFixed(1)} ppm). No chloramines detected.`,
+                        instructions: '',
+                        product: ''
+                    });
+                }
+            }
+            
             // Alkalinity Recommendations
             if (alkalinity < 80) {
                 const bicarbonateLbs = Math.ceil((gallons / 10000) * 1.5);
@@ -383,7 +533,7 @@
             }
             
             // Calcium Hardness (if provided)
-            if (hardness) {
+            if (hardness !== null) {
                 if (hardness < 200) {
                     const calciumLbs = Math.ceil((gallons / 10000) * 2);
                     steps.push({
@@ -407,6 +557,13 @@
                         product: ''
                     });
                 }
+            } else {
+                steps.push({
+                    title: '🧪 Calcium Hardness - Get Tested',
+                    content: 'Calcium hardness testing recommended for complete water balance.',
+                    instructions: 'Most basic test strips don\'t include calcium hardness. Options: 1) FREE testing at Leslie\'s or local pool stores, 2) Buy comprehensive test strips like AquaChek 7-in-1, or 3) Get a liquid test kit like Taylor K-2006.',
+                    product: 'https://amazon.com/dp/B000BXLGMO'
+                });
             }
             
             // Condition-based recommendations
